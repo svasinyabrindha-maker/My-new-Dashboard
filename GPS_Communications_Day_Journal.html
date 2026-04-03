@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>GPS Communications – Day Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-deep:       #060b18;
+    --bg-card:       #0d1a2e;
+    --bg-card2:      #0f2040;
+    --border-glow:   #1a3a6e;
+    --accent-cyan:   #00d4ff;
+    --accent-gold:   #ffd700;
+    --accent-green:  #00ff88;
+    --accent-red:    #ff4466;
+    --accent-purple: #a855f7;
+    --accent-orange: #ff8c00;
+    --text-bright:   #e8f4ff;
+    --text-muted:    #7a9cc0;
+    --text-dim:      #3a5a80;
+    --debit-col:     #ff4466;
+    --credit-col:    #00ff88;
+    --row-hover:     rgba(0,212,255,0.05);
+    --shadow-glow:   0 0 20px rgba(0,212,255,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-deep);
+    font-family: 'Exo 2', sans-serif;
+    color: var(--text-bright);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── Animated Background ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 40% at 20% 10%, rgba(0,80,160,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,180,120,0.10) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 30% at 50% 50%, rgba(0,212,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app-wrapper { position: relative; z-index: 1; }
+
+  /* ─── Header ─── */
+  .header {
+    background: linear-gradient(135deg, #0a1628 0%, #0d2040 50%, #091525 100%);
+    border-bottom: 2px solid var(--border-glow);
+    box-shadow: 0 4px 30px rgba(0,212,255,0.12);
+    padding: 14px 16px 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .brand {
+    flex: 1;
+  }
+
+  .brand-tag {
+    font-size: 9px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: var(--accent-cyan);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .brand-tag::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 1px;
+    background: var(--accent-cyan);
+  }
+
+  .brand-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(90deg, #00d4ff, #ffffff, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 1px;
+  }
+
+  .brand-sub {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+
+  .datetime-block {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .date-display {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-gold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .time-display {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    letter-spacing: 2px;
+    margin-top: 2px;
+    text-shadow: 0 0 12px rgba(0,212,255,0.5);
+  }
+
+  .time-zone {
+    font-size: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-top: 1px;
+  }
+
+  /* ─── Summary Cards ─── */
+  .summary-section {
+    padding: 14px 12px 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .summary-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-glow);
+    padding: 10px 8px 10px;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .summary-card.debit::before { background: linear-gradient(90deg, var(--accent-red), #ff8866); }
+  .summary-card.credit::before { background: linear-gradient(90deg, var(--accent-green), #00ccaa); }
+  .summary-card.cash::before { background: linear-gradient(90deg, var(--accent-gold), #ff8c00); }
+
+  .summary-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .summary-card.debit::after { background: radial-gradient(ellipse at center, rgba(255,68,102,0.06) 0%, transparent 70%); opacity: 1; }
+  .summary-card.credit::after { background: radial-gradient(ellipse at center, rgba(0,255,136,0.06) 0%, transparent 70%); opacity: 1; }
+  .summary-card.cash::after { background: radial-gradient(ellipse at center, rgba(255,215,0,0.06) 0%, transparent 70%); opacity: 1; }
+
+  .card-icon {
+    font-size: 16px;
+    margin-bottom: 4px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    position: relative;
+    z-index: 1;
+    margin-bottom: 4px;
+  }
+
+  .card-amount {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    line-height: 1;
+  }
+
+  .summary-card.debit .card-amount { color: var(--accent-red); text-shadow: 0 0 10px rgba(255,68,102,0.4); }
+  .summary-card.credit .card-amount { color: var(--accent-green); text-shadow: 0 0 10px rgba(0,255,136,0.4); }
+  .summary-card.cash .card-amount { color: var(--accent-gold); text-shadow: 0 0 10px rgba(255,215,0,0.4); }
+
+  /* ─── Journal Section ─── */
+  .journal-section {
+    padding: 14px 12px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 16px;
+    background: var(--accent-cyan);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--accent-cyan);
+  }
+
+  .entry-count {
+    background: rgba(0,212,255,0.12);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--accent-cyan);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  /* ─── Add Entry Form ─── */
+  .add-entry-form {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glow);
+    border-radius: 14px;
+    padding: 14px 12px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-glow);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  .form-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .form-input, .form-select {
+    background: rgba(0,30,60,0.8);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    color: var(--text-bright);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 10px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .form-input:focus, .form-select:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 2px rgba(0,212,255,0.15);
+  }
+
+  .form-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300d4ff' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    cursor: pointer;
+  }
+
+  .form-select option {
+    background: #0d1a2e;
+    color: var(--text-bright);
+  }
+
+  .amount-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .amount-input-wrap {
+    position: relative;
+  }
+
+  .amount-prefix {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .debit-wrap .amount-prefix { color: var(--accent-red); }
+  .credit-wrap .amount-prefix { color: var(--accent-green); }
+
+  .amount-input-wrap .form-input {
+    padding-left: 24px;
+  }
+
+  .debit-wrap .form-input { border-color: rgba(255,68,102,0.4); }
+  .debit-wrap .form-input:focus { border-color: var(--accent-red); box-shadow: 0 0 0 2px rgba(255,68,102,0.15); }
+  .credit-wrap .form-input { border-color: rgba(0,255,136,0.4); }
+  .credit-wrap .form-input:focus { border-color: var(--accent-green); box-shadow: 0 0 0 2px rgba(0,255,136,0.15); }
+
+  .btn-add {
+    width: 100%;
+    margin-top: 10px;
+    background: linear-gradient(135deg, #005a8e, #0077b6, #005a8e);
+    border: 1px solid var(--accent-cyan);
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    box-shadow: 0 0 12px rgba(0,212,255,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-add::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.05), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.4s;
+  }
+
+  .btn-add:active::before { transform: translateX(100%); }
+  .btn-add:active { transform: scale(0.98); box-shadow: 0 0 20px rgba(0,212,255,0.4); }
+
+  /* ─── Entries Table ─── */
+  .entries-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glow);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-glow);
+  }
+
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 480px;
+  }
+
+  thead tr {
+    background: linear-gradient(90deg, #0a1e3c, #0d2545, #0a1e3c);
+  }
+
+  th {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 8px;
+    text-align: left;
+    color: var(--accent-cyan);
+    border-bottom: 1px solid var(--border-glow);
+    white-space: nowrap;
+  }
+
+  th:first-child { padding-left: 12px; text-align: center; }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(26,58,110,0.5);
+    transition: background 0.15s;
+    animation: rowIn 0.3s ease forwards;
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  @keyframes rowIn {
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  tbody tr:hover { background: var(--row-hover); }
+  tbody tr:last-child { border-bottom: none; }
+
+  td {
+    padding: 9px 8px;
+    font-size: 12px;
+    color: var(--text-bright);
+    vertical-align: middle;
+  }
+
+  td:first-child {
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    padding-left: 12px;
+  }
+
+  .td-name { font-weight: 600; color: #d0e8ff; max-width: 90px; }
+  .td-name span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .category-badge {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  .cat-mobile-recharge   { background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4); }
+  .cat-dth-recharge      { background: rgba(0,212,255,0.15); color: var(--accent-cyan); border: 1px solid rgba(0,212,255,0.3); }
+  .cat-mobile-sales      { background: rgba(0,255,136,0.12); color: var(--accent-green); border: 1px solid rgba(0,255,136,0.3); }
+  .cat-mobile-accessories{ background: rgba(255,140,0,0.15); color: var(--accent-orange); border: 1px solid rgba(255,140,0,0.3); }
+  .cat-sim-activation    { background: rgba(255,215,0,0.12); color: var(--accent-gold); border: 1px solid rgba(255,215,0,0.3); }
+
+  .payment-badge {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.1);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .pay-cash     { background: rgba(255,215,0,0.12); color: #ffd700; border-color: rgba(255,215,0,0.3); }
+  .pay-gpay     { background: rgba(52,168,83,0.15); color: #34a853; border-color: rgba(52,168,83,0.3); }
+  .pay-phonepe  { background: rgba(99,0,220,0.15); color: #a855f7; border-color: rgba(99,0,220,0.3); }
+  .pay-paytm    { background: rgba(0,150,220,0.15); color: #38bdf8; border-color: rgba(0,150,220,0.3); }
+  .pay-other    { background: rgba(120,120,120,0.15); color: #9ca3af; border-color: rgba(120,120,120,0.3); }
+
+  .amount-debit  { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent-red); }
+  .amount-credit { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent-green); }
+  .amount-empty  { color: var(--text-dim); font-size: 10px; }
+
+  .btn-delete {
+    background: rgba(255,68,102,0.1);
+    border: 1px solid rgba(255,68,102,0.3);
+    border-radius: 6px;
+    color: var(--accent-red);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 7px;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+
+  .btn-delete:active { background: rgba(255,68,102,0.3); transform: scale(0.92); }
+
+  /* ─── Empty State ─── */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+  }
+
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+
+  /* ─── Footer totals ─── */
+  .totals-row {
+    background: linear-gradient(90deg, #0a1e3c, #0d2545, #0a1e3c);
+    border-top: 2px solid var(--border-glow);
+  }
+
+  .totals-row td {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 10px 8px;
+  }
+
+  .totals-label {
+    font-family: 'Rajdhani', sans-serif !important;
+    font-size: 10px !important;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted) !important;
+    text-align: right;
+  }
+
+  /* ─── Day Closed Overlay ─── */
+  .day-closed {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(6,11,24,0.95);
+    z-index: 999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px;
+  }
+
+  .day-closed.show { display: flex; }
+
+  .closed-icon { font-size: 60px; margin-bottom: 20px; animation: pulse 2s ease-in-out infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.95); }
+  }
+
+  .closed-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--accent-cyan);
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+
+  .closed-sub {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    margin-bottom: 30px;
+  }
+
+  .btn-new-day {
+    background: linear-gradient(135deg, #003d6b, #0077b6);
+    border: 2px solid var(--accent-cyan);
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 14px 28px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+    transition: all 0.2s;
+  }
+
+  .btn-new-day:active { transform: scale(0.97); }
+
+  /* ─── Toast ─── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: rgba(0,212,255,0.15);
+    border: 1px solid var(--accent-cyan);
+    border-radius: 10px;
+    color: var(--accent-cyan);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 10px 20px;
+    z-index: 500;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  /* ─── Scroll hint ─── */
+  .scroll-hint {
+    text-align: center;
+    padding: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ─── Status bar ─── */
+  .status-bar {
+    background: linear-gradient(90deg, rgba(0,60,120,0.3), rgba(0,30,60,0.3));
+    border-top: 1px solid var(--border-glow);
+    padding: 6px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green);
+    display: inline-block;
+    margin-right: 5px;
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .status-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .day-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  /* ─── Bottom padding ─── */
+  .bottom-spacer { height: 30px; }
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <!-- ─── HEADER ─── -->
+  <div class="header">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-tag">Telecom Management</div>
+        <div class="brand-title">GPS COMM.</div>
+        <div class="brand-sub">Day Journal</div>
+      </div>
+      <div class="datetime-block">
+        <div class="date-display" id="dateDisplay">—</div>
+        <div class="time-display" id="timeDisplay">00:00:00</div>
+        <div class="time-zone">IST · UTC+5:30</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SUMMARY CARDS ─── -->
+  <div class="summary-section">
+    <div class="summary-card debit">
+      <div class="card-icon">📤</div>
+      <div class="card-label">Debit Bal.</div>
+      <div class="card-amount" id="totalDebit">₹0</div>
+    </div>
+    <div class="summary-card credit">
+      <div class="card-icon">📥</div>
+      <div class="card-label">Credit Bal.</div>
+      <div class="card-amount" id="totalCredit">₹0</div>
+    </div>
+    <div class="summary-card cash">
+      <div class="card-icon">💵</div>
+      <div class="card-label">Cash in Hand</div>
+      <div class="card-amount" id="cashInHand">₹0</div>
+    </div>
+  </div>
+
+  <!-- ─── STATUS BAR ─── -->
+  <div class="status-bar">
+    <div><span class="status-dot"></span><span class="status-text">Journal Active</span></div>
+    <div class="day-label" id="dayLabel">Day 1</div>
+  </div>
+
+  <!-- ─── JOURNAL SECTION ─── -->
+  <div class="journal-section">
+
+    <!-- Add Entry Form -->
+    <div class="section-header">
+      <div class="section-title">Add Entry</div>
+    </div>
+
+    <div class="add-entry-form">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Customer Name</label>
+          <input type="text" class="form-input" id="inName" placeholder="Enter customer name" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="inCategory">
+            <option value="" disabled selected>Select</option>
+            <option value="Mobile Recharge">Mobile Recharge</option>
+            <option value="DTH Recharge">DTH Recharge</option>
+            <option value="Mobile Sales">Mobile Sales</option>
+            <option value="Mobile Accessories">Mobile Accessories</option>
+            <option value="SIM Activation">SIM Activation</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Mode</label>
+          <select class="form-select" id="inPayment">
+            <option value="" disabled selected>Select</option>
+            <option value="Cash">Cash</option>
+            <option value="GPay">GPay</option>
+            <option value="PhonePe">PhonePe</option>
+            <option value="Paytm">Paytm</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Debit (₹)</label>
+          <div class="amount-input-wrap debit-wrap">
+            <span class="amount-prefix">₹</span>
+            <input type="number" class="form-input" id="inDebit" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Credit (₹)</label>
+          <div class="amount-input-wrap credit-wrap">
+            <span class="amount-prefix">₹</span>
+            <input type="number" class="form-input" id="inCredit" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
+          </div>
+        </div>
+      </div>
+      <button class="btn-add" onclick="addEntry()">＋ ADD ENTRY</button>
+    </div>
+
+    <!-- Entries Table -->
+    <div class="section-header">
+      <div class="section-title">Entries</div>
+      <div class="entry-count" id="entryCount">0</div>
+    </div>
+
+    <div class="entries-container">
+      <div class="scroll-hint">← Scroll horizontally if needed →</div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Customer</th>
+              <th>Category</th>
+              <th>Mode</th>
+              <th>Debit</th>
+              <th>Credit</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="entriesBody">
+            <tr id="emptyRow">
+              <td colspan="7">
+                <div class="empty-state">
+                  <div class="empty-icon">📋</div>
+                  <div class="empty-text">No entries yet. Add your first transaction above.</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot id="totalsFooter" style="display:none;">
+            <tr class="totals-row">
+              <td colspan="4" class="totals-label">Daily Totals</td>
+              <td class="amount-debit" id="footDebit">₹0</td>
+              <td class="amount-credit" id="footCredit">₹0</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-spacer"></div>
+</div>
+
+<!-- ─── DAY CLOSED OVERLAY ─── -->
+<div class="day-closed" id="dayClosedOverlay">
+  <div class="closed-icon">🔒</div>
+  <div class="closed-title">DAY CLOSED</div>
+  <div class="closed-sub">Midnight reached. Journal has been saved.<br/>Start a new day to continue entries.</div>
+  <button class="btn-new-day" onclick="startNewDay()">START NEW DAY →</button>
+</div>
+
+<!-- ─── TOAST ─── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── IST Helpers ────────────────────────────────────────────
+function getIST() {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + 5.5 * 3600000);
+}
+
+function formatDate(d) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function todayKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatAmt(n) {
+  return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+// ─── State ──────────────────────────────────────────────────
+let entries = [];
+let currentDateKey = '';
+let dayClosed = false;
+let dayNumber = 1;
+
+// ─── Storage ─────────────────────────────────────────────────
+const STORE_KEY = 'gps_journal_v2';
+
+function saveState() {
+  const data = {
+    dateKey: currentDateKey,
+    entries: entries,
+    dayNumber: dayNumber,
+    dayClosed: dayClosed
+  };
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+function init() {
+  const ist = getIST();
+  currentDateKey = todayKey(ist);
+  const saved = loadState();
+
+  if (saved) {
+    if (saved.dateKey === currentDateKey) {
+      entries = saved.entries || [];
+      dayNumber = saved.dayNumber || 1;
+      dayClosed = saved.dayClosed || false;
+    } else {
+      // New day
+      dayNumber = (saved.dayNumber || 1) + 1;
+      entries = [];
+      dayClosed = false;
+    }
+  }
+
+  saveState();
+  renderAll();
+
+  if (dayClosed) {
+    document.getElementById('dayClosedOverlay').classList.add('show');
+  }
+}
+
+// ─── Clock ────────────────────────────────────────────────────
+let prevSecond = -1;
+
+function tickClock() {
+  const ist = getIST();
+  const h = String(ist.getHours()).padStart(2,'0');
+  const m = String(ist.getMinutes()).padStart(2,'0');
+  const s = String(ist.getSeconds()).padStart(2,'0');
+  document.getElementById('timeDisplay').textContent = `${h}:${m}:${s}`;
+  document.getElementById('dateDisplay').textContent = formatDate(ist);
+
+  // Check midnight
+  if (h === '00' && m === '00' && s === '00' && prevSecond !== 0 && !dayClosed && entries.length > 0) {
+    closeDayAtMidnight();
+  }
+  prevSecond = parseInt(s);
+
+  // Check if date changed (new day)
+  const newKey = todayKey(ist);
+  if (newKey !== currentDateKey && !dayClosed) {
+    currentDateKey = newKey;
+    // already handled by midnight close if entries exist
+  }
+}
+
+setInterval(tickClock, 500);
+tickClock();
+
+// ─── Midnight Close ───────────────────────────────────────────
+function closeDayAtMidnight() {
+  dayClosed = true;
+  saveState();
+  document.getElementById('dayClosedOverlay').classList.add('show');
+}
+
+function startNewDay() {
+  const ist = getIST();
+  currentDateKey = todayKey(ist);
+  entries = [];
+  dayNumber++;
+  dayClosed = false;
+  saveState();
+  document.getElementById('dayClosedOverlay').classList.remove('show');
+  renderAll();
+  showToast('New day started! Journal is ready.');
+}
+
+// ─── Add Entry ────────────────────────────────────────────────
+function addEntry() {
+  if (dayClosed) { showToast('Day is closed. Start a new day.'); return; }
+
+  const name     = document.getElementById('inName').value.trim();
+  const category = document.getElementById('inCategory').value;
+  const payment  = document.getElementById('inPayment').value;
+  const debit    = parseFloat(document.getElementById('inDebit').value) || 0;
+  const credit   = parseFloat(document.getElementById('inCredit').value) || 0;
+
+  if (!name)     { showToast('Enter customer name.'); return; }
+  if (!category) { showToast('Select a category.'); return; }
+  if (!payment)  { showToast('Select payment mode.'); return; }
+  if (debit === 0 && credit === 0) { showToast('Enter debit or credit amount.'); return; }
+
+  const entry = {
+    id: Date.now(),
+    name, category, payment, debit, credit,
+    sno: entries.length + 1
+  };
+
+  entries.push(entry);
+  saveState();
+  renderAll();
+  clearForm();
+  showToast('Entry added successfully!');
+}
+
+function clearForm() {
+  document.getElementById('inName').value = '';
+  document.getElementById('inCategory').value = '';
+  document.getElementById('inPayment').value = '';
+  document.getElementById('inDebit').value = '';
+  document.getElementById('inCredit').value = '';
+}
+
+// ─── Delete Entry ─────────────────────────────────────────────
+function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  entries.forEach((e, i) => e.sno = i + 1);
+  saveState();
+  renderAll();
+  showToast('Entry removed.');
+}
+
+// ─── Render ───────────────────────────────────────────────────
+function renderAll() {
+  renderEntries();
+  updateSummary();
+  document.getElementById('dayLabel').textContent = `Day ${dayNumber}`;
+  document.getElementById('entryCount').textContent = entries.length;
+}
+
+function catClass(cat) {
+  return {
+    'Mobile Recharge':    'cat-mobile-recharge',
+    'DTH Recharge':       'cat-dth-recharge',
+    'Mobile Sales':       'cat-mobile-sales',
+    'Mobile Accessories': 'cat-mobile-accessories',
+    'SIM Activation':     'cat-sim-activation',
+  }[cat] || '';
+}
+
+function payClass(pay) {
+  return {
+    'Cash':    'pay-cash',
+    'GPay':    'pay-gpay',
+    'PhonePe': 'pay-phonepe',
+    'Paytm':   'pay-paytm',
+    'Other':   'pay-other',
+  }[pay] || '';
+}
+
+function renderEntries() {
+  const tbody = document.getElementById('entriesBody');
+  const tfoot = document.getElementById('totalsFooter');
+
+  if (entries.length === 0) {
+    tbody.innerHTML = `
+      <tr id="emptyRow">
+        <td colspan="7">
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <div class="empty-text">No entries yet. Add your first transaction above.</div>
+          </div>
+        </td>
+      </tr>`;
+    tfoot.style.display = 'none';
+    return;
+  }
+
+  tfoot.style.display = '';
+  tbody.innerHTML = entries.map((e, idx) => `
+    <tr style="animation-delay:${idx * 0.04}s">
+      <td>${e.sno}</td>
+      <td class="td-name"><span title="${e.name}">${e.name}</span></td>
+      <td><span class="category-badge ${catClass(e.category)}">${e.category.replace('Mobile ','Mob. ').replace('DTH ','DTH ')}</span></td>
+      <td><span class="payment-badge ${payClass(e.payment)}">${e.payment}</span></td>
+      <td>${e.debit > 0 ? `<span class="amount-debit">₹${e.debit.toLocaleString('en-IN')}</span>` : `<span class="amount-empty">—</span>`}</td>
+      <td>${e.credit > 0 ? `<span class="amount-credit">₹${e.credit.toLocaleString('en-IN')}</span>` : `<span class="amount-empty">—</span>`}</td>
+      <td><button class="btn-delete" onclick="deleteEntry(${e.id})">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function updateSummary() {
+  let totalDebit  = entries.reduce((s, e) => s + e.debit, 0);
+  let totalCredit = entries.reduce((s, e) => s + e.credit, 0);
+  // Cash in Hand = all credits received minus all debits paid (all payment modes)
+  let cashIn      = totalCredit - totalDebit;
+
+  document.getElementById('totalDebit').textContent  = formatAmt(totalDebit);
+  document.getElementById('totalCredit').textContent = formatAmt(totalCredit);
+  document.getElementById('cashInHand').textContent  = formatAmt(cashIn);
+  document.getElementById('footDebit').textContent   = formatAmt(totalDebit);
+  document.getElementById('footCredit').textContent  = formatAmt(totalCredit);
+}
+
+// ─── Toast ────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Start ────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
